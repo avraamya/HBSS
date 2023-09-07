@@ -1,0 +1,11 @@
+HBSS/*.o
+HBSS/output/
+HBSS/params/
+
+HBSS*/*.o
+HBSS*/output/
+HBSS*/params/
+
+HBSS**/*.o
+HBSS**/output/
+HBSS**/params/
