@@ -2,8 +2,6 @@
 
 void key_gen(stateless_lamport_key_pair *key_pair) {
     int i;
-
-    // Allocate memory for the arrays
     key_pair->secret_key = malloc(2 * sizeof(struct key_size_cell *));
     key_pair->public_key = malloc(2 * sizeof(struct key_size_cell *));
     for (i = 0; i < 2; i++) {
@@ -13,15 +11,9 @@ void key_gen(stateless_lamport_key_pair *key_pair) {
     for (i = 0; i < M; i++) {
         RAND_bytes(key_pair->secret_key[0][i].key, KEY_SIZE_BYTES);
         RAND_bytes(key_pair->secret_key[1][i].key, KEY_SIZE_BYTES);
-        /**CHANGE TO SHA256 FOR KEY 256 BIT**/
-        if(KEY_SIZE_BYTES == 32){
-            SHA256(key_pair->secret_key[0][i].key, KEY_SIZE_BYTES, key_pair->public_key[0][i].key);
-            SHA256(key_pair->secret_key[1][i].key, KEY_SIZE_BYTES, key_pair->public_key[1][i].key);
-        }
-        else{
-            SHA512(key_pair->secret_key[0][i].key, KEY_SIZE_BYTES, key_pair->public_key[0][i].key);
-            SHA512(key_pair->secret_key[1][i].key, KEY_SIZE_BYTES, key_pair->public_key[1][i].key);
-        }
+        
+        SHA256(key_pair->secret_key[0][i].key, KEY_SIZE_BYTES, key_pair->public_key[0][i].key);
+        SHA256(key_pair->secret_key[1][i].key, KEY_SIZE_BYTES, key_pair->public_key[1][i].key);        
     }
 }
 
@@ -46,43 +38,36 @@ void sign(unsigned char *message, stateless_lamport_signature *signature, struct
     SHA512(message, strlen((char*) message), D.digest_cell); //calculate the digest of the message
     for(j=0;j<DIGEST_LEN_K;j++){ //loop over the bits in the digest
         sprintf(buffer, "%s%d", message, j); //concatenate the message with the j
-        SHA512(buffer, strlen(buffer), D_j.digest_cell); //calculate the digest of the message
-        int i,k;
-        int length_digest = DIGEST_LEN_K_BYTES;
-        BIGNUM *bn = BN_new();
-        BN_zero(bn);
-        for (i = 0; i < length_digest; i++) {
-            for(k=0; k<8; k++){
-                if (D_j.digest_cell[i] >> (7-k) & 1) {
-                    BN_lshift(bn, bn, 1);
-                    BN_add_word(bn, 1);
-                }
-                else {
-                    BN_lshift(bn, bn, 1);
-                }
-            }
+
+        SHA512(buffer, strlen(buffer), D_j.digest_cell); //calculate the digest of the message with j
+
+        
+        union { // providing for up to N = 64bits (on my system)
+            unsigned char c[8];
+            unsigned long i_j;
+        } mod;
+
+        mod.i_j = 0; // initialise
+
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
+        size_t n = 0; // destination byte count
+
+        for( size_t i = sz; i && n < sizeof mod; ) {
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
         }
-        BIGNUM *modolus = BN_new();
-        BN_set_word(modolus, M);
-        BIGNUM *result = BN_new();
-        BN_zero(result);
-        BN_CTX *ctx = BN_CTX_new();
-        BN_mod(result, bn, modolus, ctx);
-        char *dec = BN_bn2dec(result);
-        char *hex_digest = BN_bn2hex(bn);
-        sscanf(dec, "%d", &i_j); //convert the digest to an integer
+
+        int N = LEN_M;
+        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
+
         if (bit == 1) {
-            memcpy(signature->signature[j].signature_cell, secret_key[1][i_j].key, KEY_SIZE_BYTES);
+            memcpy(signature->signature[j].signature_cell, secret_key[1][mod.i_j].key, KEY_SIZE_BYTES);
         } else if (bit == 0) {
-            memcpy(signature->signature[j].signature_cell, secret_key[0][i_j].key, KEY_SIZE_BYTES);
+            memcpy(signature->signature[j].signature_cell, secret_key[0][mod.i_j].key, KEY_SIZE_BYTES);
         }
-        OPENSSL_free(dec);
-        BN_free(bn);
-        BN_free(modolus);
-        BN_free(result);
-        BN_CTX_free(ctx);
     }   
+
     return 1;
 }
 
@@ -97,54 +82,39 @@ int verify(unsigned char *message, stateless_lamport_signature *signature, struc
     for(j=0;j<DIGEST_LEN_K;j++){ //loop over the bits in the digest
         sprintf(buffer, "%s%d", message, j); //concatenate the message with the j
         SHA512(buffer, strlen(buffer), D_j.digest_cell); //calculate the digest of the message
-        int i,k;
-        int length_digest = DIGEST_LEN_K_BYTES;
-        BIGNUM *bn = BN_new();
-        BN_zero(bn);
-        for (i = 0; i < length_digest; i++) {
-            for(k=0; k<8; k++){
-                if (D_j.digest_cell[i] >> (7-k) & 1) {
-                    BN_lshift(bn, bn, 1);
-                    BN_add_word(bn, 1);
-                }
-                else {
-                    BN_lshift(bn, bn, 1);
-                }
-            }
+ 
+        union { // providing for up to N = 64bits (on my system)
+            unsigned char c[8];
+            unsigned long i_j;
+        } mod;
+
+        mod.i_j = 0; // initialise
+
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
+        size_t n = 0; // destination byte count
+
+        for( size_t i = sz; i && n < sizeof mod; ) {
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
         }
-        BIGNUM *modolus = BN_new();
-        BN_set_word(modolus, M);
-        BIGNUM *result = BN_new();
-        BN_zero(result);
-        BN_CTX *ctx = BN_CTX_new();
-        BN_mod(result, bn, modolus, ctx);
-        char *dec = BN_bn2dec(result);
-        sscanf(dec, "%d", &i_j); //convert the digest to an integer
-        
-        if(KEY_SIZE_BYTES == 32){
-            SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell); //calculate the digest of the signature        
-        }
-        else if(KEY_SIZE_BYTES == 64){
-            SHA512(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell); //calculate the digest of the signature        
-        }
+
+        int N = LEN_M;
+        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+
+        SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell); //calculate the digest of the signature        
         
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
         if(bit == 1){
-            if(memcmp(D_sign_j.digest_cell, public_key[1][i_j].key, KEY_SIZE/8) != 0){    
-                printf("error in root\n");
+            if(memcmp(D_sign_j.digest_cell, public_key[1][mod.i_j].key, KEY_SIZE/8) != 0){    
+                printf("error in signture\n");
                 return 0;
             }
         } else if (bit == 0) {
-            if(memcmp(D_sign_j.digest_cell, public_key[0][i_j].key, KEY_SIZE/8) != 0){
-                printf("error in root\n");
+            if(memcmp(D_sign_j.digest_cell, public_key[0][mod.i_j].key, KEY_SIZE/8) != 0){
+                printf("error in signture\n");
                 return 0;
             }
         }
-        OPENSSL_free(dec);
-        BN_free(bn);
-        BN_free(modolus);
-        BN_free(result);
-        BN_CTX_free(ctx);
+
     }
     return 1;
 }

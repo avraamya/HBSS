@@ -71,34 +71,28 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
 
         sprintf(buffer, "%s%d", message, j); 
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
-        int i,k;
-        int length_digest = DIGEST_LEN_K_BYTES;
-        BIGNUM *bn = BN_new();
-        BN_zero(bn);
-        for (i = 0; i < length_digest; i++) {
-            for(k=0; k<8; k++){
-                if (D_j.digest_cell[i] >> (7-k) & 1) {
-                    BN_lshift(bn, bn, 1);
-                    BN_add_word(bn, 1);
-                }
-                else {
-                    BN_lshift(bn, bn, 1);
-                }
-            }
+
+        union { // providing for up to N = 64bits (on my system)
+            unsigned char c[8];
+            unsigned long i_j;
+        } mod;
+
+        mod.i_j = 0; // initialise
+
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
+        size_t n = 0; // destination byte count
+
+        for( size_t i = sz; i && n < sizeof mod; ) {
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
         }
-        BIGNUM *modolus = BN_new();
-        BN_set_word(modolus, M);
-        BIGNUM *result = BN_new();
-        BN_zero(result);
-        BN_CTX *ctx = BN_CTX_new();
-        BN_mod(result, bn, modolus, ctx);
-        char *dec = BN_bn2dec(result);
-        char *hex_digest = BN_bn2hex(bn);
-        sscanf(dec, "%d", &i_j); 
+
+        int N = LEN_M;
+        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
 
         // r_j = H^(2*i_j + bit )(s_0)
-        for (i = 0; i <=2*i_j+bit; i++){
+        for (size_t i = 0; i <=2*mod.i_j+bit; i++){
             if (KEY_SIZE_BYTES == 32) {
                 SHA256(r_j.key, KEY_SIZE_BYTES, r_j.key);
             } else if (KEY_SIZE_BYTES == 64) {
@@ -107,7 +101,7 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
         }
 
         // t_2m_j = H^(2M-2*i_j-bit)(s_1)
-        for (i = 0; i <= 2 * M - 2 * i_j - bit; i++){
+        for (size_t i = 0; i <= 2 * M - 2 * mod.i_j - bit; i++){
             if (KEY_SIZE_BYTES == 32) {
                 SHA256(t_2m_j.key, KEY_SIZE_BYTES, t_2m_j.key);
             } else if (KEY_SIZE_BYTES == 64) {
@@ -116,19 +110,14 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
         }
 
         //xor r_j and t_2m_j to get preimage
-        for (i = 0; i < KEY_SIZE_BYTES; i++) {
+        for (size_t i = 0; i < KEY_SIZE_BYTES; i++) {
             preimage.key[i] = r_j.key[i] ^ t_2m_j.key[i];
         }
 
         //signature
         memcpy(signature->signature[j].signature_cell, preimage.key, KEY_SIZE_BYTES);
-
-        OPENSSL_free(dec);
-        BN_free(bn);
-        BN_free(modolus);
-        BN_free(result);
-        BN_CTX_free(ctx);
     }   
+
 }
 
 int verify(unsigned char *message, HBSS_signature *signature, struct key_size_cell *Commitment ) {
@@ -142,7 +131,25 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
     for(j=0;j<DIGEST_LEN_K;j++){ 
         sprintf(buffer, "%s%d", message, j);
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
-        int i,k;
+
+        union { // providing for up to N = 64bits (on my system)
+            unsigned char c[8];
+            unsigned long i_j;
+        } mod;
+
+        mod.i_j = 0; // initialise
+
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
+        size_t n = 0; // destination byte count
+
+        for( size_t i = sz; i && n < sizeof mod; ) {
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+        }
+
+        int N = LEN_M;
+        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+
+/*        int i,k;
         int length_digest = DIGEST_LEN_K_BYTES;
         BIGNUM *bn = BN_new();
         BN_zero(bn);
@@ -164,24 +171,20 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
         BN_CTX *ctx = BN_CTX_new();
         BN_mod(result, bn, modolus, ctx);
         char *dec = BN_bn2dec(result);
-        sscanf(dec, "%d", &i_j); 
+        sscanf(dec, "%d", &i_j); */
         
-        if(KEY_SIZE_BYTES == 32){
-            SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
-        }
-        else if(KEY_SIZE_BYTES == 64){
-            SHA512(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
-        }
-        
+        SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
+
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
-        if(memcmp(D_sign_j.digest_cell, Commitment[2*i_j+bit].key, KEY_SIZE/8) != 0){    
+        if(memcmp(D_sign_j.digest_cell, Commitment[2*mod.i_j+bit].key, KEY_SIZE/8) != 0){    
                 exit(EXIT_FAILURE);
             }
-        OPENSSL_free(dec);
+/*      OPENSSL_free(dec);
         BN_free(bn);
         BN_free(modolus);
         BN_free(result);
         BN_CTX_free(ctx);
+        */
     }
     return 1;
 }

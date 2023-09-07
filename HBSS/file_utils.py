@@ -11,9 +11,9 @@ config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
     #"ms" : [134217728,268435456,536870912,1073741824],
-    "ms" : [200000000],
+    "ms" : [65536], #ms is power of 2
     "random_message_sizes" : [0],
-    "number_of_runs" : 1
+    "number_of_runs" : 10
 }
     
 #functions for stateless lamport
@@ -21,6 +21,7 @@ def create_header_file(key_size, digest_len_k, m, random_message_size):
     key_size_bytes = key_size // 8
     digest_len_k_bytes = digest_len_k // 8
     n_signatures_total = (int)(m * 0.6931471805599453) // digest_len_k
+    len_m = (int) (math.log(m, 2))
 
     filename = generate_file_name(key_size, digest_len_k, m, random_message_size)
 
@@ -34,6 +35,7 @@ def create_header_file(key_size, digest_len_k, m, random_message_size):
 #define DIGEST_LEN_K {digest_len_k}
 #define DIGEST_LEN_K_BYTES {digest_len_k_bytes}
 #define M {m}
+#define LEN_M {len_m}
 #define N_SIGNATURES_TOTAL {n_signatures_total}
 #define RANDOM_MESSAGE_SIZE {random_message_size}
 
