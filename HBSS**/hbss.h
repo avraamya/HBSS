@@ -27,8 +27,8 @@ struct MerkleTreeNode {
 
 
 typedef struct {
-    struct key_size_cell Seeds[2];
-    MerkleTreeNode *root;
+    struct key_size_cell *secret_key;
+    MerkleTreeNode *tree;
 } HBSS_key_pair;
 
 
@@ -56,13 +56,13 @@ void key_gen(HBSS_key_pair *key_pair) ;
 void free_memory(HBSS_key_pair *key_pair);
 
 //void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell (*Seeds)[2], MerkleTreeNode *root); 
-void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell Seeds[2], MerkleTreeNode *root); 
+//void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell Seeds[2], MerkleTreeNode *root); 
+void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell *secret_key, MerkleTreeNode *root); 
+int verify(unsigned char *message, HBSS_signature *signature, struct key_size_cell public_key);
 
-int verify(unsigned char *message, HBSS_signature *signature, MerkleTreeNode *root );
-
-MerkleTreeNode *create_leaf(struct key_size_cell *hash);
+MerkleTreeNode *create_leaf(struct key_size_cell *secret_key);
 MerkleTreeNode *create_parent(MerkleTreeNode *left, MerkleTreeNode *right);
-MerkleTreeNode *create_tree(struct key_size_cell *hashes, int num_hashes);
+MerkleTreeNode *create_tree(struct key_size_cell *secret_keys, int num_hashes);
 void get_root(MerkleTreeNode *root, struct key_size_cell *root_hash);
 void get_proof(MerkleTreeNode *root, int leaf_index, struct key_size_cell *proof, int *proof_length);
 void free_merkle_tree(MerkleTreeNode *root);

@@ -12,7 +12,6 @@ HBSS*/__pycache__/
 HBSS*/.idea/
 HBSS*/.vscode/
 
-
 HBSS**/*.o
 HBSS**/output/
 HBSS**/params/
