@@ -8,9 +8,9 @@ import math
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [2048], #ms is power of 2
+    "ms" : [1024,2048,4096,8192,16384,32768,65536,131072], #ms is power of 2
     "random_message_sizes" : [0],
-    "number_of_runs" : 5
+    "number_of_runs" : 10
 }    
 #functions for stateless lamport
 def create_header_file(key_size, digest_len_k, m, random_message_size):

@@ -112,8 +112,6 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
         }
 
     }   
-
-    printf("signed\n");
     return 1;
     
 }
@@ -218,9 +216,7 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
             printf("error in root\n");
             return 0;
         }
-    }
-    printf("verified\n");
-    
+    }    
     return 1;
 }
 
