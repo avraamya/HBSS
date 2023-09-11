@@ -18,7 +18,7 @@ struct key_size_cell {
 };
 
 typedef struct {
-    struct key_size_cell Seeds[2];
+    struct key_size_cell **Seeds;
     struct key_size_cell *Commitment; 
 } HBSS_key_pair;
 
@@ -47,7 +47,7 @@ void key_gen(HBSS_key_pair *key_pair) ;
 
 void free_memory(HBSS_key_pair *key_pair);
 
-void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell (*Seeds)[2]);
+void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell **Seeds);
 
 int verify(unsigned char *message, HBSS_signature *signature, struct key_size_cell *Commitment) ;
 #endif

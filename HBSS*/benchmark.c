@@ -119,10 +119,10 @@ int main()
     setbuf(stdout, NULL);
     init_cpucycles();
 
-    printf("Parameters: M = %d, KEY_SIZE = %d, KEY_SIZE_BYTES = %d, DIGEST_LEN_K = %d, DIGEST_LEN_K_BYTES = %d, N_SIGNATURES_TOTAL = %d , RANDOM_MESSAGE_SIZE = %d \n", M, KEY_SIZE, KEY_SIZE_BYTES, DIGEST_LEN_K, DIGEST_LEN_K_BYTES, N_SIGNATURES_TOTAL, RANDOM_MESSAGE_SIZE);
+    printf("Parameters: M = %d, KEY_SIZE = %d, KEY_SIZE_BYTES = %d, DIGEST_LEN_K = %d, DIGEST_LEN_K_BYTES = %d, N_SIGNATURES_TOTAL = %d , RANDOM_MESSAGE_SIZE = %d , STEP =%d \n", M, KEY_SIZE, KEY_SIZE_BYTES, DIGEST_LEN_K, DIGEST_LEN_K_BYTES, N_SIGNATURES_TOTAL, RANDOM_MESSAGE_SIZE, STEP);
 
     MEASURE("Generate key pair...   ", 1, key_gen(&key_pair));
-    MEASURE("Sign message...        ", N_SIGNATURES_TOTAL, sign(message, &signature, &(key_pair.Seeds)));
+    MEASURE("Sign message...        ", N_SIGNATURES_TOTAL, sign(message, &signature, key_pair.Seeds));
     MEASURE("Verify signature...    ", N_SIGNATURES_TOTAL, verify(message, &signature, key_pair.Commitment));
     
     free_memory(&key_pair);

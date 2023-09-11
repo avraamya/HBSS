@@ -2,57 +2,65 @@
 
 void key_gen(HBSS_key_pair *key_pair) {
 
-    RAND_bytes(key_pair->Seeds[0].key, KEY_SIZE_BYTES); // random key
-    RAND_bytes(key_pair->Seeds[1].key, KEY_SIZE_BYTES); // random key
-
-    int i, j;
-
-    struct key_size_cell r_j , t_2m_j;
+    struct key_size_cell hash0, hash1;
     struct key_size_cell preimage;
 
+    //two hashs array of size STEP
+
+    struct key_size_cell hash0_array[STEP];
+    struct key_size_cell hash1_array[STEP];
+    
+    key_pair->Seeds = malloc(2 * sizeof(struct key_size_cell *));
     key_pair->Commitment = malloc(2 * M * sizeof(struct key_size_cell));
+    for (size_t i = 0; i < 2; i++) {
+        key_pair->Seeds[i] = malloc(2*M/STEP * sizeof(struct key_size_cell));
+    }
 
-    for (i = 0; i < 2 * M; i++) {
-        memcpy(r_j.key, key_pair->Seeds[0].key, KEY_SIZE_BYTES); // r_j = s_0
-        memcpy(t_2m_j.key, key_pair->Seeds[1].key, KEY_SIZE_BYTES); // t_2m_j = s_1
+    RAND_bytes(key_pair->Seeds[0][0].key, KEY_SIZE_BYTES);
+    RAND_bytes(key_pair->Seeds[1][0].key, KEY_SIZE_BYTES);
 
-        // r_j = H^i(s_0)
-        for (j = 0; j <=i; j++){
-            if (KEY_SIZE_BYTES == 32) {
-                SHA256(r_j.key, KEY_SIZE_BYTES, r_j.key);
-            } else if (KEY_SIZE_BYTES == 64) {
-                SHA512(r_j.key, KEY_SIZE_BYTES, r_j.key);
+    for (size_t i = 0; i < 2*M/STEP - 1; i++) {
+        memcpy(hash0.key, key_pair->Seeds[0][i].key, KEY_SIZE_BYTES);
+        memcpy(hash1.key, key_pair->Seeds[1][i].key, KEY_SIZE_BYTES);
+
+        for (size_t j = 0; j < STEP; j++) {
+            SHA256(hash0.key, KEY_SIZE_BYTES, hash0.key);
+            SHA256(hash1.key, KEY_SIZE_BYTES, hash1.key);
+        }
+
+        memcpy(key_pair->Seeds[0][i+1].key, hash0.key, KEY_SIZE_BYTES);
+        memcpy(key_pair->Seeds[1][i+1].key, hash1.key, KEY_SIZE_BYTES);    
+    }
+    
+    for (size_t i = 0; i < 2*M/STEP; i++) {
+
+        memcpy(hash0_array[0].key, key_pair->Seeds[0][i].key, KEY_SIZE_BYTES);
+        memcpy(hash1_array[0].key, key_pair->Seeds[1][2*M/STEP - 1 - i].key, KEY_SIZE_BYTES);
+
+        for (size_t j = 0; j < STEP-1; j++) {
+            SHA256(hash0_array[j].key, KEY_SIZE_BYTES, hash0_array[j+1].key);
+            SHA256(hash1_array[j].key, KEY_SIZE_BYTES, hash1_array[j+1].key);
+        }
+
+        for (size_t j = 0; j < STEP; j++) {
+            for (size_t k = 0; k < KEY_SIZE_BYTES; k++) {
+                preimage.key[k] = hash0_array[j].key[k] ^ hash1_array[STEP-j-1].key[k];
             }
+            SHA256(preimage.key, KEY_SIZE_BYTES, key_pair->Commitment[j+i*STEP].key);
         }
-
-        // t_2m_j = H^(2m-i)(s_1)
-        for (j = 0; j <= 2 * M - i; j++){
-            if (KEY_SIZE_BYTES == 32) {
-                SHA256(t_2m_j.key, KEY_SIZE_BYTES, t_2m_j.key);
-            } else if (KEY_SIZE_BYTES == 64) {
-                SHA512(t_2m_j.key, KEY_SIZE_BYTES, t_2m_j.key);
-            }
-        }
-
-        //xor r_j and t_2m_j to get preimage
-        for (j = 0; j < KEY_SIZE_BYTES; j++) {
-            preimage.key[j] = r_j.key[j] ^ t_2m_j.key[j];
-        }
-
-        //commitment
-        if (KEY_SIZE_BYTES == 32) {
-            SHA256(preimage.key, KEY_SIZE_BYTES, key_pair->Commitment[i].key);
-        } else if (KEY_SIZE_BYTES == 64) {
-            SHA512(preimage.key, KEY_SIZE_BYTES, key_pair->Commitment[i].key);
-        }
-
+    
     }
 }
 
 void free_memory(HBSS_key_pair *key_pair) {
     free(key_pair->Commitment);
+    for (size_t i = 0; i < 2; i++) {
+        free(key_pair->Seeds[i]);
+    }
+    free(key_pair->Seeds);
 }
-void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell (*Seeds)[2]) { 
+
+void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cell **Seeds) { 
     int j;  
     int i_j;
     
@@ -61,13 +69,10 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
     HBSS_digest_message D_j;
     SHA512(message, strlen((char*) message), D.digest_cell); 
 
-    struct key_size_cell r_j , t_2m_j;
+    struct key_size_cell hash0, hash1;
     struct key_size_cell preimage;
 
     for(j=0;j<DIGEST_LEN_K;j++){ 
-
-        memcpy(r_j.key, (*Seeds)[0].key, KEY_SIZE_BYTES); // r_j = s_0
-        memcpy(t_2m_j.key, (*Seeds)[1].key, KEY_SIZE_BYTES); // t_2m_j = s_1
 
         sprintf(buffer, "%s%d", message, j); 
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
@@ -91,33 +96,26 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
 
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
 
-        // r_j = H^(2*i_j + bit )(s_0)
-        for (size_t i = 0; i <=2*mod.i_j+bit; i++){
-            if (KEY_SIZE_BYTES == 32) {
-                SHA256(r_j.key, KEY_SIZE_BYTES, r_j.key);
-            } else if (KEY_SIZE_BYTES == 64) {
-                SHA512(r_j.key, KEY_SIZE_BYTES, r_j.key);
-            }
+        int block_step0 = 2*mod.i_j/STEP;
+        memcpy(hash0.key, Seeds[0][block_step0].key, KEY_SIZE_BYTES);
+        memcpy(hash1.key, Seeds[1][2*M/STEP-block_step0-1].key, KEY_SIZE_BYTES);
+
+        int step0 = (2*mod.i_j+bit) & (STEP - 1);
+        int step1 = STEP - step0 - 1;
+        
+        for (size_t k = 0; k < step0; k++) {
+            SHA256(hash0.key, KEY_SIZE_BYTES, hash0.key);
+        }            
+
+        for (size_t k = 0; k < step1; k++) {
+            SHA256(hash1.key, KEY_SIZE_BYTES, hash1.key);
         }
 
-        // t_2m_j = H^(2M-2*i_j-bit)(s_1)
-        for (size_t i = 0; i <= 2 * M - 2 * mod.i_j - bit; i++){
-            if (KEY_SIZE_BYTES == 32) {
-                SHA256(t_2m_j.key, KEY_SIZE_BYTES, t_2m_j.key);
-            } else if (KEY_SIZE_BYTES == 64) {
-                SHA512(t_2m_j.key, KEY_SIZE_BYTES, t_2m_j.key);
-            }
+        for (size_t k = 0; k < KEY_SIZE_BYTES; k++) {
+            preimage.key[k] = hash0.key[k] ^ hash1.key[k];
         }
-
-        //xor r_j and t_2m_j to get preimage
-        for (size_t i = 0; i < KEY_SIZE_BYTES; i++) {
-            preimage.key[i] = r_j.key[i] ^ t_2m_j.key[i];
-        }
-
-        //signature
         memcpy(signature->signature[j].signature_cell, preimage.key, KEY_SIZE_BYTES);
     }   
-
 }
 
 int verify(unsigned char *message, HBSS_signature *signature, struct key_size_cell *Commitment ) {
@@ -148,43 +146,14 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
 
         int N = LEN_M;
         mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
-
-/*        int i,k;
-        int length_digest = DIGEST_LEN_K_BYTES;
-        BIGNUM *bn = BN_new();
-        BN_zero(bn);
-        for (i = 0; i < length_digest; i++) {
-            for(k=0; k<8; k++){
-                if (D_j.digest_cell[i] >> (7-k) & 1) {
-                    BN_lshift(bn, bn, 1);
-                    BN_add_word(bn, 1);
-                }
-                else {
-                    BN_lshift(bn, bn, 1);
-                }
-            }
-        }
-        BIGNUM *modolus = BN_new();
-        BN_set_word(modolus, M);
-        BIGNUM *result = BN_new();
-        BN_zero(result);
-        BN_CTX *ctx = BN_CTX_new();
-        BN_mod(result, bn, modolus, ctx);
-        char *dec = BN_bn2dec(result);
-        sscanf(dec, "%d", &i_j); */
         
         SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
 
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
-        if(memcmp(D_sign_j.digest_cell, Commitment[2*mod.i_j+bit].key, KEY_SIZE/8) != 0){    
+        if(memcmp(D_sign_j.digest_cell, Commitment[2*mod.i_j+bit].key, KEY_SIZE/8) != 0){  
+                printf("Verification failed\n");  
                 exit(EXIT_FAILURE);
             }
-/*      OPENSSL_free(dec);
-        BN_free(bn);
-        BN_free(modolus);
-        BN_free(result);
-        BN_CTX_free(ctx);
-        */
     }
     return 1;
 }

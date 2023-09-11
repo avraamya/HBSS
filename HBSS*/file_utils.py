@@ -8,18 +8,19 @@ import math
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [1024,2048,4096,8192,16384,32768,65536,131072], #ms is power of 2
+    "ms" : [1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576], #ms is power of 2
     "random_message_sizes" : [0],
+    "step": [128,256,512],
     "number_of_runs" : 10
 }    
 #functions for stateless lamport
-def create_header_file(key_size, digest_len_k, m, random_message_size):
+def create_header_file(key_size, digest_len_k, m, random_message_size, step):
     key_size_bytes = key_size // 8
     digest_len_k_bytes = digest_len_k // 8
     n_signatures_total = (int)(m * 0.6931471805599453) // digest_len_k
     len_m = (int) (math.log(m, 2))
 
-    filename = generate_file_name(key_size, digest_len_k, m, random_message_size)
+    filename = generate_file_name(key_size, digest_len_k, m, random_message_size, step)
 
     parameter_name = f"params-hbss-{filename}.h"
     content = f"""#ifndef {parameter_name[:-2].upper()}    
@@ -32,6 +33,7 @@ def create_header_file(key_size, digest_len_k, m, random_message_size):
 #define DIGEST_LEN_K_BYTES {digest_len_k_bytes}
 #define M {m}
 #define LEN_M {len_m}
+#define STEP {step}
 #define N_SIGNATURES_TOTAL {n_signatures_total}
 #define RANDOM_MESSAGE_SIZE {random_message_size}
 
@@ -46,14 +48,16 @@ def iterate_params(config, callback):
         for digest_len_k in config["digest_len_ks"]:
             for m in config["ms"]:
                 for random_message_size in config["random_message_sizes"]:
-                    callback(key_size, digest_len_k, m, random_message_size)
+                    for step in config["step"]:
+                        callback(key_size, digest_len_k, m, random_message_size,step)
 
-def generate_file_name(key_size, digest_len_k, m, random_message_size):
+def generate_file_name(key_size, digest_len_k, m, random_message_size, step):
     params = {
         "m": m,
         "ks": key_size,
         "k": digest_len_k,
-        "msg": random_message_size
+        "msg": random_message_size,
+        "step": step
     }
     return ''.join(f"{k.upper()}{v}" for k, v in params.items())
 
@@ -61,8 +65,8 @@ def generate_file_name(key_size, digest_len_k, m, random_message_size):
 def generate_file_names(config):
     file_names = []
 
-    def append_file_name(key_size, digest_len_k, m, random_message_size):
-        file_name = generate_file_name(key_size, digest_len_k, m, random_message_size)
+    def append_file_name(key_size, digest_len_k, m, random_message_size, step):
+        file_name = generate_file_name(key_size, digest_len_k, m, random_message_size, step)
         file_names.append(file_name)
     
     iterate_params(config, append_file_name)
@@ -74,9 +78,9 @@ def process_output_file(output_file_name):
     with open(output_file_path, 'r') as output_file:
         content = output_file.read()
 
-    parameters_pattern = r'Parameters: M = (\d+), KEY_SIZE = (\d+), .*DIGEST_LEN_K = (\d+). .*N_SIGNATURES_TOTAL = (\d+) .*RANDOM_MESSAGE_SIZE = (\d+)'
+    parameters_pattern = r'Parameters: M = (\d+), KEY_SIZE = (\d+), .*DIGEST_LEN_K = (\d+). .*N_SIGNATURES_TOTAL = (\d+) .*RANDOM_MESSAGE_SIZE = (\d+) .*STEP = (\d+)'
 
-    m, key_size, digest_len, n_signatures_total, message_size = map(int, re.search(parameters_pattern, content).groups())
+    m, key_size, digest_len, n_signatures_total, message_size,step = map(int, re.search(parameters_pattern, content).groups())
 
     generate_key_pair_pattern_avg = r'Generate key pair\.\.\. .*?(\d+\.\d+) us'
     sign_message_pattern_avg = r'Sign message\.\.\. .*?(\d+\.\d+) us'
@@ -102,10 +106,10 @@ def process_output_file(output_file_name):
     sign_median = median(sign_message_cycles)
     verify_median = median(verify_signature_cycles)
 
-    print("m = {}, key_size = {}, digest_len = {}, n_signatures_total = {}, message_size = {}".format(m, key_size, digest_len, n_signatures_total, message_size))    
+    print("m = {}, key_size = {}, digest_len = {}, n_signatures_total = {}, message_size = {}, step = {}".format(m, key_size, digest_len, n_signatures_total, message_size, step))    
     print("key pair avg = {} us, sign avg = {} us, verify avg = {} us".format(key_pair_avg, sign_avg, verify_avg))
     print("key pair median = {} cycles, sign median = {} cycles, verify median = {} cycles".format(key_pair_median, sign_median, verify_median))
-    return m, key_size, digest_len, n_signatures_total, message_size, key_pair_avg, sign_avg, verify_avg, key_pair_median, sign_median, verify_median
+    return m, key_size, digest_len, n_signatures_total, message_size, key_pair_avg, sign_avg, verify_avg, key_pair_median, sign_median, verify_median,step
 
 def get_current_date():
     return datetime.date.today().strftime('%Y%m%d')
@@ -113,9 +117,9 @@ def get_current_date():
 def get_format():
 
     headers = ["M", "KEY_SIZE", "DIGEST_LEN", "N_SIGNATURES_TOTAL", "RANDOM_MESSAGE_SIZE",
-                     "key Avg (us)", "Sign Avg (us)", "Verify Avg (us)", "key cycles", "Sign cycles", "Verify cycles"]
-    header_format = '{:^20}' *  5 + '{:^20}' * 6 + '\n'
-    row_format = '{:^20}' *  5 + '{:^20.2f}' * 3 + '{:^20}' * 3 + '\n'
+                     "key Avg (us)", "Sign Avg (us)", "Verify Avg (us)", "key cycles", "Sign cycles", "Verify cycles", "Step"]
+    header_format = '{:^20}' *  5 + '{:^20}' * 7 + '\n'
+    row_format = '{:^20}' *  5 + '{:^20.2f}' * 3 + '{:^20}' * 4 + '\n'
 
     separator = '-' * 20 * len(headers) + '\n'
 
