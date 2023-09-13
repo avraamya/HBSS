@@ -8,9 +8,9 @@ import math
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576], #ms is power of 2
+    "ms" : [67108864], #ms is power of 2
     "random_message_sizes" : [0],
-    "step": [128,256,512],
+    "step": [2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536], 
     "number_of_runs" : 10
 }    
 #functions for stateless lamport
@@ -80,7 +80,7 @@ def process_output_file(output_file_name):
 
     parameters_pattern = r'Parameters: M = (\d+), KEY_SIZE = (\d+), .*DIGEST_LEN_K = (\d+). .*N_SIGNATURES_TOTAL = (\d+) .*RANDOM_MESSAGE_SIZE = (\d+) .*STEP = (\d+)'
 
-    m, key_size, digest_len, n_signatures_total, message_size,step = map(int, re.search(parameters_pattern, content).groups())
+    m, key_size, digest_len, n_signatures_total, message_size, step = map(int, re.search(parameters_pattern, content).groups())
 
     generate_key_pair_pattern_avg = r'Generate key pair\.\.\. .*?(\d+\.\d+) us'
     sign_message_pattern_avg = r'Sign message\.\.\. .*?(\d+\.\d+) us'
@@ -109,7 +109,7 @@ def process_output_file(output_file_name):
     print("m = {}, key_size = {}, digest_len = {}, n_signatures_total = {}, message_size = {}, step = {}".format(m, key_size, digest_len, n_signatures_total, message_size, step))    
     print("key pair avg = {} us, sign avg = {} us, verify avg = {} us".format(key_pair_avg, sign_avg, verify_avg))
     print("key pair median = {} cycles, sign median = {} cycles, verify median = {} cycles".format(key_pair_median, sign_median, verify_median))
-    return m, key_size, digest_len, n_signatures_total, message_size, key_pair_avg, sign_avg, verify_avg, key_pair_median, sign_median, verify_median,step
+    return m, key_size, digest_len, n_signatures_total, message_size, key_pair_avg, sign_avg, verify_avg, key_pair_median, sign_median, verify_median, step
 
 def get_current_date():
     return datetime.date.today().strftime('%Y%m%d')

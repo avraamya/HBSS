@@ -197,14 +197,11 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
             if (last_bit == 0) {
                 memcpy(concat[0].key, sha_to_the_root.key, KEY_SIZE_BYTES);
                 memcpy(concat[1].key, tmp.key, KEY_SIZE_BYTES);
-
                 SHA256(concat, 2*KEY_SIZE_BYTES, sha_to_the_root.key);
 
             } else {
-
                 memcpy(concat[0].key, tmp.key, KEY_SIZE_BYTES);
                 memcpy(concat[1].key, sha_to_the_root.key, KEY_SIZE_BYTES);
-
                 SHA256(concat, 2*KEY_SIZE_BYTES, sha_to_the_root.key);
             }
 

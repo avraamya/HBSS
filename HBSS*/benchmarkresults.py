@@ -18,11 +18,11 @@ def main ():
             input_file_name = f'{file_name}_output_{current_date}.txt'
             print (input_file_name)
 
-            m, key_size, digest_len, n_signatures_total, message_size, gen_key_pair_avg, sign_msg_avg, verify_sig_avg, gen_key_pair_median, sign_msg_median, verify_sig_median = process_output_file(input_file_name)
+            m, key_size, digest_len, n_signatures_total, message_size, gen_key_pair_avg, sign_msg_avg, verify_sig_avg, gen_key_pair_median, sign_msg_median, verify_sig_median, step = process_output_file(input_file_name)
 
             row = [m, key_size, digest_len, n_signatures_total, message_size,
                    gen_key_pair_avg, sign_msg_avg, verify_sig_avg,
-                   gen_key_pair_median, sign_msg_median, verify_sig_median]
+                   gen_key_pair_median, sign_msg_median, verify_sig_median,step]
             output_file.write(row_format.format(*row))
 
         #output_file.write(separator)
