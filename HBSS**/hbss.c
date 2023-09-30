@@ -25,7 +25,6 @@ MerkleTreeNode *create_parent(MerkleTreeNode *left, MerkleTreeNode *right) {
     node->left = left;
     node->right = right;
 
-    // The hash of the parent node is the hash of the concatenation of the children hashes
     unsigned char children_hashes[2 * KEY_SIZE_BYTES];
     memcpy(children_hashes, left->hash.key, KEY_SIZE_BYTES);
     memcpy(children_hashes + KEY_SIZE_BYTES, right->hash.key, KEY_SIZE_BYTES);
@@ -42,7 +41,7 @@ MerkleTreeNode *create_parent(MerkleTreeNode *left, MerkleTreeNode *right) {
 MerkleTreeNode *create_tree(struct key_size_cell *secret_keys, int num_hashes) {
     MerkleTreeNode **nodes = malloc(num_hashes * sizeof(MerkleTreeNode*));
     for (int i = 0; i < num_hashes; i++) {
-        //nodes[i] = create_leaf(&hashes[i]);
+        
         nodes[i] = create_leaf(&secret_keys[i]);
 
     }
@@ -50,7 +49,7 @@ MerkleTreeNode *create_tree(struct key_size_cell *secret_keys, int num_hashes) {
     int num_nodes = num_hashes;
     while (num_nodes > 1) {
         if (num_nodes % 2 != 0) {
-            nodes[num_nodes++] = nodes[num_nodes - 1];  // Duplicate last node if number of nodes is odd
+            nodes[num_nodes++] = nodes[num_nodes - 1];  
         }
         for (int i = 0; i < num_nodes / 2; i++) {
             nodes[i] = create_parent(nodes[2 * i], nodes[2 * i + 1]);
@@ -80,22 +79,22 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
         sprintf(buffer, "%s%d", message, j); 
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
 
-        union { // providing for up to N = 64bits (on my system)
+        union { 
             unsigned char c[8];
             unsigned long i_j;
         } mod;
 
-        mod.i_j = 0; // initialise
+        mod.i_j = 0; 
 
-        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
-        size_t n = 0; // destination byte count
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; 
+        size_t n = 0; 
 
         for( size_t i = sz; i && n < sizeof mod; ) {
-            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; 
         }
 
         int N = LEN_M;
-        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+        mod.i_j &= (1<<N)-1; 
 
 
 
@@ -121,7 +120,7 @@ void get_path(MerkleTreeNode *root, int leaf_index, struct key_size_cell *path, 
 
     int level = LOG_2_2M;
 
-    *path_length = 0; // Initialize path length
+    *path_length = 0; 
     int half_number_leafs = M;
 
     MerkleTreeNode *current_node = root;
@@ -158,22 +157,22 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
         sprintf(buffer, "%s%d", message, j);
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
 
-        union { // providing for up to N = 64bits (on my system)
+        union { 
             unsigned char c[8];
             unsigned long i_j;
         } mod;
 
-        mod.i_j = 0; // initialise
+        mod.i_j = 0; 
 
-        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
-        size_t n = 0; // destination byte count
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; 
+        size_t n = 0; 
 
         for( size_t i = sz; i && n < sizeof mod; ) {
-            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; 
         }
 
         int N = LEN_M;
-        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+        mod.i_j &= (1<<N)-1; 
 
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;        
 
@@ -208,7 +207,6 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
             preimage_number = preimage_number >> 1;
         }
 
-        //check if the root is the same as the root we got from the signature , if not return error.
         if (memcmp(sha_to_the_root.key, public_key.key, KEY_SIZE_BYTES) != 0) {
             printf("error in root\n");
             return 0;
@@ -239,18 +237,14 @@ void print_tree(MerkleTreeNode* node, int depth) {
     if (node == NULL)
         return;
 
-    // Process the right child first
     print_tree(node->right, depth + 1);
 
-    // Print the current node
     for(int i = 0; i < depth; i++)
-        printf("\t"); // Use a tab to indent the node based on its depth in the tree
+        printf("\t"); 
 
-    // Print the value of the key
     for(int i = 0; i < KEY_SIZE_BYTES; i++)
         printf("%02X", node->hash.key[i]);
     printf("\n");
 
-    // Process the left child
     print_tree(node->left, depth + 1);
 }

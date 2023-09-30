@@ -25,7 +25,5 @@ def main ():
                    gen_key_pair_median, sign_msg_median, verify_sig_median]
             output_file.write(row_format.format(*row))
 
-        #output_file.write(separator)
-
 if __name__ == "__main__":
     main()

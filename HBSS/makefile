@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -Wpedantic -O3 -std=c99 -Wconversion -Wmissing-prototypes -DFILE_NAME=$(FILE_NAME)
 LDFLAGS = -lcrypto -lm -lssl
-OBJFILES = cycles.o statelesslamport.o benchmark.o
+OBJFILES = cycles.o hbss.o benchmark.o
 TARGET = benchmark
 
 all: $(TARGET)

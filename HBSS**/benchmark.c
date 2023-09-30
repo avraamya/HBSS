@@ -120,19 +120,11 @@ int main()
     init_cpucycles();
 
     printf("Parameters: M = %d, KEY_SIZE = %d, KEY_SIZE_BYTES = %d, DIGEST_LEN_K = %d, DIGEST_LEN_K_BYTES = %d, N_SIGNATURES_TOTAL = %d , RANDOM_MESSAGE_SIZE = %d \n", M, KEY_SIZE, KEY_SIZE_BYTES, DIGEST_LEN_K, DIGEST_LEN_K_BYTES, N_SIGNATURES_TOTAL, RANDOM_MESSAGE_SIZE);
-
-   
    
     MEASURE("Generate key pair...   ", 1, key_gen(&key_pair));
     MEASURE("Sign message...        ", N_SIGNATURES_TOTAL, sign(message, &signature, key_pair.secret_key, key_pair.tree));
     MEASURE("Verify signature...    ", N_SIGNATURES_TOTAL, verify(message, &signature, key_pair.tree->hash));
     
-
-    //test
-    //key_gen(&key_pair);
-    //sign(message, &signature, key_pair.secret_key, key_pair.tree)
-    //verify(message, &signature, key_pair.root);
-
     free_memory(&key_pair);
     free(message);
 

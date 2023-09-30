@@ -4,7 +4,7 @@
 #include <time.h>
 
 #include "cycles.h"
-#include "statelesslamport.h"
+#include "hbss.h"
 
 static int cmp_llu(const void *a, const void*b)
 {

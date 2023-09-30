@@ -4,6 +4,6 @@
 #define str(s) #s
 #define xstr(s) str(s)
 
-#include xstr(params/params-statelesslamport-FILE_NAME.h) // Update this line
+#include xstr(params/params-hbss-FILE_NAME.h) // Update this line
 
 #endif

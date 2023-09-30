@@ -5,8 +5,6 @@ void key_gen(HBSS_key_pair *key_pair) {
     struct key_size_cell hash0, hash1;
     struct key_size_cell preimage;
 
-    //two hashs array of size STEP
-
     struct key_size_cell hash0_array[STEP];
     struct key_size_cell hash1_array[STEP];
     
@@ -77,22 +75,22 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
         sprintf(buffer, "%s%d", message, j); 
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
 
-        union { // providing for up to N = 64bits (on my system)
+        union { 
             unsigned char c[8];
             unsigned long i_j;
         } mod;
 
-        mod.i_j = 0; // initialise
+        mod.i_j = 0; 
 
-        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
-        size_t n = 0; // destination byte count
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; 
+        size_t n = 0; 
 
         for( size_t i = sz; i && n < sizeof mod; ) {
-            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; 
         }
 
         int N = LEN_M;
-        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+        mod.i_j &= (1<<N)-1; 
 
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
 
@@ -130,22 +128,22 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
         sprintf(buffer, "%s%d", message, j);
         SHA512(buffer, strlen(buffer), D_j.digest_cell); 
 
-        union { // providing for up to N = 64bits (on my system)
+        union { 
             unsigned char c[8];
             unsigned long i_j;
         } mod;
 
-        mod.i_j = 0; // initialise
+        mod.i_j = 0; 
 
-        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
-        size_t n = 0; // destination byte count
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; 
+        size_t n = 0; 
 
         for( size_t i = sz; i && n < sizeof mod; ) {
-            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; 
         }
 
         int N = LEN_M;
-        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+        mod.i_j &= (1<<N)-1; 
         
         SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
 

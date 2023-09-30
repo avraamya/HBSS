@@ -1,4 +1,4 @@
-#include "statelesslamport.h"
+#include "hbss.h"
 
 void key_gen(stateless_lamport_key_pair *key_pair) {
     int i;
@@ -19,7 +19,6 @@ void key_gen(stateless_lamport_key_pair *key_pair) {
 
 void free_memory(stateless_lamport_key_pair *key_pair) {
     int i;
-    // Deallocate memory for the arrays
     for (i = 0; i < 2; i++) {
         free(key_pair->secret_key[i]);
         free(key_pair->public_key[i]);
@@ -29,35 +28,34 @@ void free_memory(stateless_lamport_key_pair *key_pair) {
 }
 
 void sign(unsigned char *message, stateless_lamport_signature *signature, struct key_size_cell **secret_key) {    
-    int j;  // maybe this should be smaller than 32 bits
-    int i_j; // this number we be smaller then M, check if i can make it smaller than 32 bits
+    int j;  
+    int i_j; 
     
-    unsigned char buffer[strlen((char*) message)+ ((int)ceil(log10(DIGEST_LEN_K))+1)]; //check if this is the right size. check if it is work as expected. //calculate in DEFINE the number that sould be us for 512.0
+    unsigned char buffer[strlen((char*) message)+ ((int)ceil(log10(DIGEST_LEN_K))+1)]; 
     stateless_lamport_digest_message D;
     stateless_lamport_digest_message D_j;
-    SHA512(message, strlen((char*) message), D.digest_cell); //calculate the digest of the message
-    for(j=0;j<DIGEST_LEN_K;j++){ //loop over the bits in the digest
-        sprintf(buffer, "%s%d", message, j); //concatenate the message with the j
+    SHA512(message, strlen((char*) message), D.digest_cell); 
+    for(j=0;j<DIGEST_LEN_K;j++){ 
+        sprintf(buffer, "%s%d", message, j); 
 
-        SHA512(buffer, strlen(buffer), D_j.digest_cell); //calculate the digest of the message with j
+        SHA512(buffer, strlen(buffer), D_j.digest_cell); 
 
-        
-        union { // providing for up to N = 64bits (on my system)
+        union { 
             unsigned char c[8];
             unsigned long i_j;
         } mod;
 
-        mod.i_j = 0; // initialise
+        mod.i_j = 0; 
 
-        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
-        size_t n = 0; // destination byte count
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; 
+        size_t n = 0; 
 
         for( size_t i = sz; i && n < sizeof mod; ) {
-            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; 
         }
 
         int N = LEN_M;
-        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+        mod.i_j &= (1<<N)-1; 
 
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
 
@@ -79,28 +77,28 @@ int verify(unsigned char *message, stateless_lamport_signature *signature, struc
     stateless_lamport_digest_message D_j;
     stateless_lamport_digest_signature D_sign_j;
     SHA512(message, strlen((char*) message), D.digest_cell); 
-    for(j=0;j<DIGEST_LEN_K;j++){ //loop over the bits in the digest
-        sprintf(buffer, "%s%d", message, j); //concatenate the message with the j
-        SHA512(buffer, strlen(buffer), D_j.digest_cell); //calculate the digest of the message
+    for(j=0;j<DIGEST_LEN_K;j++){ 
+        sprintf(buffer, "%s%d", message, j); 
+        SHA512(buffer, strlen(buffer), D_j.digest_cell); 
  
-        union { // providing for up to N = 64bits (on my system)
+        union { 
             unsigned char c[8];
             unsigned long i_j;
         } mod;
 
-        mod.i_j = 0; // initialise
+        mod.i_j = 0; 
 
-        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; // source byte count
-        size_t n = 0; // destination byte count
+        size_t sz = sizeof D_j.digest_cell / sizeof D_j.digest_cell[0]; 
+        size_t n = 0; 
 
         for( size_t i = sz; i && n < sizeof mod; ) {
-            mod.c[ n++ ] = D_j.digest_cell[ --i ]; // grab one byte
+            mod.c[ n++ ] = D_j.digest_cell[ --i ]; 
         }
 
         int N = LEN_M;
-        mod.i_j &= (1<<N)-1; // Mask off the low order N bits from that long
+        mod.i_j &= (1<<N)-1; 
 
-        SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell); //calculate the digest of the signature        
+        SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
         
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
         if(bit == 1){

@@ -4,16 +4,14 @@ from statistics import median, mean
 import datetime
 import math
 
-#parameters for stateless lamport
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [67108864], #ms is power of 2
+    "ms" : [2097152,4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912],
     "random_message_sizes" : [0],
-    "step": [2,4,8,16,32,64,128,256,512,1024,2048,4096,8192,16384,32768,65536], 
+    "step": [1,4,4096,32768],  
     "number_of_runs" : 10
 }    
-#functions for stateless lamport
 def create_header_file(key_size, digest_len_k, m, random_message_size, step):
     key_size_bytes = key_size // 8
     digest_len_k_bytes = digest_len_k // 8

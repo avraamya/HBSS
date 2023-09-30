@@ -10,8 +10,7 @@ import math
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    #"ms" : [134217728,268435456,536870912,1073741824],
-    "ms" : [1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576,2097152,4194304,8388608,16777216,33554432,67108864,134217728,268435456,536870912,1073741824], #ms is power of 2    
+    "ms" : [2097152,4194304,8388608,16777216,33554432, 67108864,134217728,268435456,536870912],     
     "random_message_sizes" : [0],
     "number_of_runs" : 10
 }
@@ -25,7 +24,7 @@ def create_header_file(key_size, digest_len_k, m, random_message_size):
 
     filename = generate_file_name(key_size, digest_len_k, m, random_message_size)
 
-    parameter_name = f"params-statelesslamport-{filename}.h"
+    parameter_name = f"params-hbss-{filename}.h"
     content = f"""#ifndef {parameter_name[:-2].upper()}    
 
 #define {parameter_name[:-2].upper()}

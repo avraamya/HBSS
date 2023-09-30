@@ -6,20 +6,19 @@ import math
 
 
 
-#parameters for stateless lamport
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [1024,2048,4096,8192,16384,32768,65536,131072,262144,524288,1048576,2097152,4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912],
+    "ms" : [2097152,4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912],
     "random_message_sizes" : [0],
     "number_of_runs" : 10
 }        
-#functions for stateless lamport
+
 def create_header_file(key_size, digest_len_k, m, random_message_size):
     key_size_bytes = key_size // 8
     digest_len_k_bytes = digest_len_k // 8
     n_signatures_total = (int)(m * 0.6931471805599453) // digest_len_k
-    #n_signatures_total = 1
+    
     log_2_2m = (int) (math.log2(2 * m))
     len_m = (int) (math.log(m, 2))
 
