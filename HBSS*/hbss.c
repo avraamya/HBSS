@@ -94,9 +94,11 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
 
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
 
-        int block_step0 = 2*mod.i_j/STEP;
+        int block_step0 = (2*mod.i_j+bit)/STEP;
+
+
         memcpy(hash0.key, Seeds[0][block_step0].key, KEY_SIZE_BYTES);
-        memcpy(hash1.key, Seeds[1][2*M/STEP-block_step0-1].key, KEY_SIZE_BYTES);
+        memcpy(hash1.key, Seeds[1][(2*M)/STEP-block_step0-1].key, KEY_SIZE_BYTES);
 
         int step0 = (2*mod.i_j+bit) & (STEP - 1);
         int step1 = STEP - step0 - 1;
@@ -112,6 +114,7 @@ void sign(unsigned char *message, HBSS_signature *signature, struct key_size_cel
         for (size_t k = 0; k < KEY_SIZE_BYTES; k++) {
             preimage.key[k] = hash0.key[k] ^ hash1.key[k];
         }
+
         memcpy(signature->signature[j].signature_cell, preimage.key, KEY_SIZE_BYTES);
     }   
 }
@@ -147,7 +150,9 @@ int verify(unsigned char *message, HBSS_signature *signature, struct key_size_ce
         
         SHA256(signature->signature[j].signature_cell, KEY_SIZE/8, D_sign_j.digest_cell);         
 
+        
         int bit = (D.digest_cell[j/8] >> (7-(j%8))) & 1;
+
         if(memcmp(D_sign_j.digest_cell, Commitment[2*mod.i_j+bit].key, KEY_SIZE/8) != 0){  
                 printf("Verification failed\n");  
                 exit(EXIT_FAILURE);

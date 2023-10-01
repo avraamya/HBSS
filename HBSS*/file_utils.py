@@ -10,7 +10,7 @@ config = {
     "ms" : [2097152,4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912],
     "random_message_sizes" : [0],
     "step": [1,4,4096,32768],  
-    "number_of_runs" : 10
+    "number_of_runs" : 10 
 }    
 def create_header_file(key_size, digest_len_k, m, random_message_size, step):
     key_size_bytes = key_size // 8
