@@ -26,3 +26,10 @@ This repository, contains the HBSS (Hash-Based Stateless Signatures) implementat
    ```
 4. **Output**:
    - The output folders will contain the results, parameter files, and plots.
+  
+## Features
+The HBSS project includes three versions of the hash-based stateless signature algorithm:
+
+1. **HBSS**: The foundational version, showcasing the core concept of hash-based stateless signatures.
+2. **HBSS\***: Optimized for memory efficiency, ideal for environments with memory constraints.
+3. **HBSS\*\***: Integrates with Merkle trees, offering a balanced approach between memory usage and computational demand, suitable for a variety of cryptographic applications, especially in post-quantum contexts.
