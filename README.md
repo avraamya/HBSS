@@ -23,6 +23,7 @@ This repository, contains the HBSS (Hash-Based Stateless Signatures) implementat
    python3 generate_param_files.py
    python3 benchmark.py
    python3 benchmarkresults.py
+   python3 graphsplots.py
    ```
 4. **Output**:
    - The output folders will contain the results, parameter files, and plots.
