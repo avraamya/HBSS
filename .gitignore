@@ -4,6 +4,7 @@ HBSS/params/
 HBSS/__pycache__/
 HBSS/.idea/
 HBSS/.vscode/
+HBSS/benchmark
 
 HBSS*/*.o
 HBSS*/output/
@@ -11,6 +12,7 @@ HBSS*/params/
 HBSS*/__pycache__/
 HBSS*/.idea/
 HBSS*/.vscode/
+HBSS*/benchmark
 
 HBSS**/*.o
 HBSS**/output/
@@ -18,3 +20,4 @@ HBSS**/params/
 HBSS**/__pycache__/
 HBSS**/.idea/
 HBSS**/.vscode/
+HBSS**/benchmark

@@ -4,12 +4,10 @@ from statistics import median, mean
 import datetime
 import math
 
-
-
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [262144, 524288, 1048576],
+    "ms" : [4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912],
     "random_message_sizes" : [0],
     "number_of_runs" : 10
 }        
