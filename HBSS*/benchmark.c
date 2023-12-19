@@ -6,29 +6,6 @@
 #include "cycles.h"
 #include "hbss.h"
 
-static int cmp_llu(const void *a, const void*b)
-{
-  if(*(unsigned long long *)a < *(unsigned long long *)b) return -1;
-  if(*(unsigned long long *)a > *(unsigned long long *)b) return 1;
-  return 0;
-}
-
-static unsigned long long median(unsigned long long *l, size_t llen)
-{
-  qsort(l,llen,sizeof(unsigned long long),cmp_llu);
-
-  if(llen%2) return l[llen/2];
-  else return (l[llen/2-1]+l[llen/2])/2;
-}
-
-static void delta(unsigned long long *l, size_t llen)
-{
-    unsigned int i;
-    for(i = 0; i < llen - 1; i++) {
-        l[i] = l[i+1] - l[i];
-    }
-}
-
 static void printfcomma(unsigned long long n)
 {
     if (n >= 1000) {
@@ -56,43 +33,24 @@ static void printfalignedcomma(unsigned long long n, int len)
     printfcomma(n);
 }
 
-static void display_result(double result, unsigned long long *l, size_t llen, unsigned long long mul)
+static void display_result(double result, unsigned long long *l)
 {
-    unsigned long long med;
-
-    result /= 1;
-    delta(l, 1 + 1);
-    med = median(l, llen);
-    printf("avg. %11.2lf us (%2.2lf sec); median ", result, result / 1e6);
-    printfalignedcomma(med, 12);
-    printf(" cycles,  %5llux: ", mul);
-    printfalignedcomma(mul*med, 12);
+    printf("Time taken: %11.2lf us (%2.2lf sec); Cycles: ", result, result / 1e6);
+    printfalignedcomma(l[1] - l[0], 12);
     printf(" cycles\n");
 }
 
-#define MEASURE_GENERIC(TEXT, MUL, FNCALL, CORR)\
+#define MEASURE_GENERIC(TEXT, FNCALL)\
     printf(TEXT);\
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);\
-    for(i = 0; i < 1; i++) {\
-        t[i] = cpucycles() / CORR;\
-        FNCALL;\
-    }\
+    t[0] = cpucycles();\
+    FNCALL;\
     t[1] = cpucycles();\
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &stop);\
-    result = ((stop.tv_sec - start.tv_sec) * 1e6 + \
-        (stop.tv_nsec - start.tv_nsec) / 1e3) / (double)CORR;\
-    display_result(result, t, 1, MUL);
-#define MEASURT(TEXT, MUL, FNCALL)\
-    MEASURE_GENERIC(\
-        TEXT, MUL,\
-        do {\
-          for (int j = 0; j < 1000; j++) {\
-            FNCALL;\
-          }\
-        } while (0);,\
-    1000);
-#define MEASURE(TEXT, MUL, FNCALL) MEASURE_GENERIC(TEXT, MUL, FNCALL, 1)
+    result = ((stop.tv_sec - start.tv_sec) * 1e6 + (stop.tv_nsec - start.tv_nsec) / 1e3);\
+    display_result(result, t);
 
+#define MEASURE(TEXT, FNCALL) MEASURE_GENERIC(TEXT, FNCALL)
 
 int main()
 {
@@ -113,17 +71,16 @@ int main()
 
     struct timespec start, stop;
     double result;
-    unsigned long long t[1 + 1];
-    int i;
+    unsigned long long t[2];
 
     setbuf(stdout, NULL);
     init_cpucycles();
 
     printf("Parameters: M = %d, KEY_SIZE = %d, KEY_SIZE_BYTES = %d, DIGEST_LEN_K = %d, DIGEST_LEN_K_BYTES = %d, N_SIGNATURES_TOTAL = %d , RANDOM_MESSAGE_SIZE = %d , STEP = %d \n", M, KEY_SIZE, KEY_SIZE_BYTES, DIGEST_LEN_K, DIGEST_LEN_K_BYTES, N_SIGNATURES_TOTAL, RANDOM_MESSAGE_SIZE, STEP);
 
-    MEASURE("Generate key pair...   ", 1, key_gen(&key_pair));
-    MEASURE("Sign message...        ", N_SIGNATURES_TOTAL, sign(message, &signature, key_pair.Seeds));
-    MEASURE("Verify signature...    ", N_SIGNATURES_TOTAL, verify(message, &signature, key_pair.Commitment));
+    MEASURE("Generate key pair...   ", key_gen(&key_pair));
+    MEASURE("Sign message...        ", sign(message, &signature, key_pair.Seeds));
+    MEASURE("Verify signature...    ", verify(message, &signature, key_pair.Commitment));
     
     free_memory(&key_pair);
     free(message);

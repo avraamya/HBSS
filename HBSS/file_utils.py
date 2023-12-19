@@ -4,18 +4,14 @@ from statistics import median, mean
 import datetime
 import math
 
-
-
-#parameters for stateless lamport
 config = {
     "key_sizes" : [256],
     "digest_len_ks" : [512],
-    "ms" : [2097152,4194304,8388608,16777216,33554432, 67108864,134217728,268435456,536870912],     
+    "ms" : [4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912],
     "random_message_sizes" : [0],
     "number_of_runs" : 10
 }
     
-#functions for stateless lamport
 def create_header_file(key_size, digest_len_k, m, random_message_size):
     key_size_bytes = key_size // 8
     digest_len_k_bytes = digest_len_k // 8
@@ -81,25 +77,25 @@ def process_output_file(output_file_name):
 
     m, key_size, digest_len, n_signatures_total, message_size = map(int, re.search(parameters_pattern, content).groups())
 
-    generate_key_pair_pattern_avg = r'Generate key pair\.\.\. .*?(\d+\.\d+) us'
-    sign_message_pattern_avg = r'Sign message\.\.\. .*?(\d+\.\d+) us'
-    verify_signature_pattern_avg = r'Verify signature\.\.\. .*?(\d+\.\d+) us'
+    generate_key_pair_pattern_time = r'Generate key pair\.\.\. .*?(\d+\.\d+) us'
+    sign_message_pattern_time = r'Sign message\.\.\. .*?(\d+\.\d+) us'
+    verify_signature_pattern_time = r'Verify signature\.\.\. .*?(\d+\.\d+) us'
 
-    generate_key_pair_timings = [float(x) for x in re.findall(generate_key_pair_pattern_avg, content)]
-    sign_message_timings = [float(x) for x in re.findall(sign_message_pattern_avg, content)]
-    verify_signature_timings = [float(x) for x in re.findall(verify_signature_pattern_avg, content)]
+    generate_key_pair_timings = [float(x) for x in re.findall(generate_key_pair_pattern_time, content)]
+    sign_message_timings = [float(x) for x in re.findall(sign_message_pattern_time, content)]
+    verify_signature_timings = [float(x) for x in re.findall(verify_signature_pattern_time, content)]
 
     key_pair_avg = mean(generate_key_pair_timings)
     sign_avg = mean(sign_message_timings)
     verify_avg = mean(verify_signature_timings)
 
-    generate_key_pair_pattern_median = r'Generate key pair\.\.\. .*?(\d+) cycles'
-    sign_message_pattern_median = r'Sign message\.\.\. .*?(\d+) cycles'
-    verify_signature_pattern_median = r'Verify signature\.\.\. .*?(\d+) cycles'
+    generate_key_pair_pattern_cycles = r'Generate key pair\.\.\. .*?(\d+) cycles'
+    sign_message_pattern_cycles = r'Sign message\.\.\. .*?(\d+) cycles'
+    verify_signature_pattern_cycles = r'Verify signature\.\.\. .*?(\d+) cycles'
 
-    generate_key_pair_cycles = [int(x) for x in re.findall(generate_key_pair_pattern_median, content)]
-    sign_message_cycles = [int(x) for x in re.findall(sign_message_pattern_median, content)]
-    verify_signature_cycles = [int(x) for x in re.findall(verify_signature_pattern_median, content)]
+    generate_key_pair_cycles = [int(x) for x in re.findall(generate_key_pair_pattern_cycles, content)]
+    sign_message_cycles = [int(x) for x in re.findall(sign_message_pattern_cycles, content)]
+    verify_signature_cycles = [int(x) for x in re.findall(verify_signature_pattern_cycles, content)]
 
     key_pair_median = median(generate_key_pair_cycles)
     sign_median = median(sign_message_cycles)
